@@ -1,0 +1,4 @@
+python-geoip
+python-geoip-geolite2-yplan
+numpy
+Pillow
