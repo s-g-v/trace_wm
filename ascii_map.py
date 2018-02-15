@@ -1,8 +1,17 @@
 #!/usr/bin/env python
 
 import os
-import numpy as np
 from PIL import Image
+
+PURPLE = '\033[95m'
+BLUE = '\033[34m'
+YELLOW = '\033[33m'
+GREEN = '\033[32m'
+RED = '\033[31m'
+ENDC = '\033[0m'
+BOLD = '\033[1m'
+UNDERLINE = '\033[4m'
+BLINK = '\033[5m'
 
 
 def get_terminal_size():
@@ -15,30 +24,38 @@ def get_terminal_size():
 
 
 class WorldMap:
-    def __init__(self, width, height):
+    def __init__(self, width, height, chars=' -'):
         self.width = width
         self.height = height
-        chars = np.asarray(list(' -'))
         img = Image.open('world.bmp')
-        img = np.sum(np.asarray(img.resize((width, height))), axis=2)
-        img -= img.min()
-        img = (1.0 - img / img.max()) * (chars.size - 1)
-        self.dot_map = chars[img.astype(int)]
+        pixels = self._normalize_colors([i for i in img.resize((width, height)).getdata()], len(chars))
+        pixels = map(lambda x: chars[int(x)], pixels)
+        self.dot_map = [pixels[(i * width):((i + 1) * width)] for i in range(height)]
 
-    def add_point(self, coordinates, mark='X'):
-        latitude = self.height * (78 - coordinates[0]) / 134
-        longitude = self.width * (151 + coordinates[1]) / 330
-        self.insert_line(int(round(latitude)), int(round(longitude)), mark)
+    @staticmethod
+    def _normalize_colors(pixel_list, color_count):
+        pixels = map(sum, pixel_list)
+        min_color = min(pixels)
+        pixels = map(lambda x: x - min_color, pixels)
+        max_color = max(pixels)
+        return map(lambda x: (1.0 - x / max_color) * (color_count - 1), pixels)
+
+    def add_point(self, coordinates, mark='X', style=UNDERLINE+RED):
+        latitude = self.height * (77 - coordinates[0]) / 134
+        longitude = self.width * (150 + coordinates[1]) / 332
+        self.insert_msg(int(round(latitude)), int(round(longitude)), mark, style)
 
     def add_text(self, list_of_strings):
         if len(list_of_strings) >= self.height - 1:
             list_of_strings = list_of_strings[-(self.height - 1):]
         for i, s in enumerate(reversed(list_of_strings)):
-            self.insert_line(self.height - 1 - i, 0, s)
+            self.insert_msg(self.height - 1 - i, 0, s)
 
-    def insert_line(self, row, column, string):
-        for i, c in enumerate(string):
-            self.dot_map[row, column + i] = c
+    def insert_msg(self, row, column, string, style=''):
+        self.dot_map[row][column: column + len(string)] = string
+        if style:
+            self.dot_map[row][column] = style + self.dot_map[row][column]
+            self.dot_map[row][column + len(string) - 1] += ENDC
 
     def __str__(self):
         return "\n".join(("".join(r) for r in self.dot_map))
@@ -47,7 +64,7 @@ class WorldMap:
 if __name__ == '__main__':
     import time
     dot_map = WorldMap(*get_terminal_size())
-    print dot_map
+    print(dot_map)
     points = {'MO': (55.750, 37.617),
               'X': (0, 0),
               'LA': (37.419, -122.057),
@@ -58,4 +75,4 @@ if __name__ == '__main__':
     for city, coords in points.iteritems():
         time.sleep(1)
         dot_map.add_point(coords, city)
-        print dot_map
+        print(dot_map)
