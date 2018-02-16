@@ -15,6 +15,7 @@ BLINK = '\033[5m'
 
 
 def get_terminal_size():
+    """ Determines terminal size """
     try:
         r, c = os.popen('stty size', 'r').read().split()
         rows, columns = int(r) - 1, int(c)
@@ -24,10 +25,11 @@ def get_terminal_size():
 
 
 class WorldMap:
-    def __init__(self, width, height, chars=' -'):
+    """ Class parses image file and converts it to matrix(width x height) of ascii symbols """
+    def __init__(self, width, height, image='world.bmp', chars=' -'):
         self.width = width
         self.height = height
-        img = Image.open('world.bmp')
+        img = Image.open(image)
         pixels = self._normalize_colors([i for i in img.resize((width, height)).getdata()], len(chars))
         pixels = map(lambda x: chars[int(x)], pixels)
         self.dot_map = [pixels[(i * width):((i + 1) * width)] for i in range(height)]
@@ -40,18 +42,25 @@ class WorldMap:
         max_color = max(pixels)
         return map(lambda x: (1.0 - x / max_color) * (color_count - 1), pixels)
 
-    def add_point(self, coordinates, mark='X', style=UNDERLINE+RED):
-        latitude = self.height * (77 - coordinates[0]) / 134
-        longitude = self.width * (150 + coordinates[1]) / 332
-        self.insert_msg(int(round(latitude)), int(round(longitude)), mark, style)
+    def add_point(self, latitude, longitude, mark='X', style=UNDERLINE+RED):
+        """ Sets mark with determined coordinates """
+        # Base formulas to move zero point to left top:
+        # x = width * (180 + longitude) / 360
+        # y = height * (90 - latitude) / 180
+        # Attached map does not cover full Earth, so multipliers should be corrected
+        row = round(self.height * (77 - latitude) / 134)
+        column = round(self.width * (150 + longitude) / 332)
+        self.add_msg(int(row), int(column), mark, style)
 
     def add_text(self, list_of_strings):
+        """ Writes list of strings on map """
         if len(list_of_strings) >= self.height - 1:
             list_of_strings = list_of_strings[-(self.height - 1):]
         for i, s in enumerate(reversed(list_of_strings)):
-            self.insert_msg(self.height - 1 - i, 0, s)
+            self.add_msg(self.height - 1 - i, 0, s)
 
-    def insert_msg(self, row, column, string, style=''):
+    def add_msg(self, row, column, string, style=''):
+        """ Writes short string message on map """
         self.dot_map[row][column: column + len(string)] = string
         if style:
             self.dot_map[row][column] = style + self.dot_map[row][column]
