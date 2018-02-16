@@ -61,7 +61,7 @@ def trace(dst, hops=30):
         raise IOError('Unable to resolve {}:\n{}'.format(dst, e))
     header = 'Trace to {}({}) in max {} hops'.format(dst, dst_ip, hops)
     world_map = WorldMap(*get_terminal_size())
-    world_map.insert_msg(0, 0, header)
+    world_map.add_msg(0, 0, header)
     print(world_map)
     routes, ttl = [], 1
     previous_location = None
@@ -72,7 +72,7 @@ def trace(dst, hops=30):
             route += '  ' + ', '.join(location[:-1])
             # route += ' ({:.3f}, {:.3f})'.format(*location[-1])  # add coordinates to debug
             if location != previous_location:
-                world_map.add_point(location[-1], '{} {}'.format(ttl, location[0]))
+                world_map.add_point(*location[-1], mark='{} {}'.format(ttl, location[0]))
                 previous_location = location
         routes.append(route)
         memento_map.add_text(routes)
