@@ -1,2 +1,5 @@
 # trace_wm
-Trace routes and displays points on ascii world map
+Works like simple traceroute utility in linux console, but additionally prints ascii world map
+and displays geo location points.
+
+![Alt Text](example.gif)
