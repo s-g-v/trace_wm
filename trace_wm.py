@@ -50,7 +50,7 @@ def get_location(ip):
         if result.timezone != 'None':
             location.append(result.timezone)
         location.append(result.location)
-    return filter(None, location)
+    return list(filter(None, location))
 
 
 def trace(dst, hops=30):

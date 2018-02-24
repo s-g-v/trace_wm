@@ -31,16 +31,16 @@ class WorldMap:
         self.height = height
         img = Image.open(image)
         pixels = self._normalize_colors([i for i in img.resize((width, height)).getdata()], len(chars))
-        pixels = map(lambda x: chars[int(x)], pixels)
+        pixels = list(map(lambda x: chars[int(x)], pixels))
         self.dot_map = [pixels[(i * width):((i + 1) * width)] for i in range(height)]
 
     @staticmethod
     def _normalize_colors(pixel_list, color_count):
-        pixels = map(sum, pixel_list)
+        pixels = list(map(sum, pixel_list))
         min_color = min(pixels)
-        pixels = map(lambda x: x - min_color, pixels)
+        pixels = list(map(lambda x: x - min_color, pixels))
         max_color = max(pixels)
-        return map(lambda x: (1.0 - x / max_color) * (color_count - 1), pixels)
+        return list(map(lambda x: (1.0 - x / max_color) * (color_count - 1), pixels))
 
     def add_point(self, latitude, longitude, mark='X', style=UNDERLINE+RED):
         """ Sets mark with determined coordinates """
