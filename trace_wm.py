@@ -10,12 +10,13 @@ from geoip import geolite2
 
 
 def _create_receiver(port, timeout=1):
-    s = socket.socket(family=socket.AF_INET, type=socket.SOCK_RAW, proto=socket.IPPROTO_ICMP)
-    s.settimeout(timeout)
     try:
+        s = socket.socket(family=socket.AF_INET, type=socket.SOCK_RAW, proto=socket.IPPROTO_ICMP)
+        s.settimeout(timeout)
         s.bind(('', port))
-    except socket.error as e:
-        raise IOError("Can't bind receiver socket: {}".format(e))
+    except socket.error:
+        print("Can't bind receiver socket. Try to run with sudo.")
+        exit(1)
     return s
 
 
@@ -57,16 +58,16 @@ def trace(dst, hops=30):
     port = random.choice(range(33434, 33535))
     try:
         dst_ip = socket.gethostbyname(dst)
-    except socket.error as e:
-        raise IOError('Unable to resolve {}:\n{}'.format(dst, e))
+    except socket.error:
+        print('Unable to resolve ' + dst)
+        exit(1)
     header = 'Trace to {}({}) in max {} hops'.format(dst, dst_ip, hops)
     world_map = WorldMap(*get_terminal_size())
     world_map.add_msg(0, 0, header)
     print(world_map)
-    routes, ttl = [], 1
+    routes = []
     previous_location = None
-    while ttl < hops + 1:
-        memento_map = copy.deepcopy(world_map)
+    for ttl in range(1, hops + 1):
         route, location = _send_message(ttl, dst, port)
         if location:
             route += '  ' + ', '.join(location[:-1])
@@ -75,11 +76,11 @@ def trace(dst, hops=30):
                 world_map.add_point(*location[-1], mark='{} {}'.format(ttl, location[0]))
                 previous_location = location
         routes.append(route)
+        memento_map = copy.deepcopy(world_map)
         memento_map.add_text(routes)
         print(memento_map)
         if route.split()[1] == dst_ip:
             break
-        ttl += 1
 
 
 if __name__ == '__main__':
@@ -87,5 +88,4 @@ if __name__ == '__main__':
     parser.add_argument('host', metavar='host', type=str, help='Destination host to trace route')
     parser.add_argument('--hops', '-n', type=int, help='Max number of hops', required=False, default=30)
     args = parser.parse_args()
-
     trace(args.host, args.hops)
